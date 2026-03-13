@@ -96,6 +96,10 @@ long __fastcall__ ria_call_long (unsigned char op);
 #define RIA_OP_LRAND 0x04
 #define RIA_OP_STDIN_OPT 0x05
 #define RIA_OP_ERRNO_OPT 0x06
+#define RIA_OP_ARGV 0x08
+#define RIA_OP_EXEC 0x09
+#define RIA_OP_ATTR_GET 0x0A
+#define RIA_OP_ATTR_SET 0x0B
 #define RIA_OP_TZSET 0x0D
 #define RIA_OP_TZQUERY 0x0E
 #define RIA_OP_CLOCK 0x0F
@@ -151,6 +155,12 @@ int __fastcall__ phi2 (void);
 int __fastcall__ code_page (int);
 long __fastcall__ lrand (void);
 int __fastcall__ stdin_opt (unsigned long ctrl_bits, unsigned char str_length);
+
+int __fastcall__ ria_argv (char* buf, int size);
+int __fastcall__ ria_exec (char argv[]);
+int __fastcall__ ria_attr_get ();
+int __fastcall__ ria_attr_set ();
+
 int __fastcall__ read_xstack (void* buf, unsigned count, int fildes);
 int __fastcall__ read_xram (unsigned buf, unsigned count, int fildes);
 int __fastcall__ write_xstack (const void* buf, unsigned count, int fildes);
