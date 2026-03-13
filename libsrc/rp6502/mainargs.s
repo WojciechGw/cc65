@@ -2,7 +2,7 @@
 ; mainargs.s
 ;
 
-; Lower priority than initheap so argv_malloc() can use malloc().
+; Lower priority than initheap so argv_mem() can use malloc().
 .constructor initmainargs, 23
 .import __argc, __argv, _argv_mem
 .import incax2
