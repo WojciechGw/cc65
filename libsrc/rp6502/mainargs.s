@@ -4,7 +4,7 @@
 
 ; Lower priority than initheap so argv_malloc() can use malloc().
 .constructor initmainargs, 23
-.import __argc, __argv, _argv_malloc
+.import __argc, __argv, _argv_mem
 .importzp ptr1, ptr2
 .include "rp6502.inc"
 
@@ -27,7 +27,7 @@
 
     ; Allocate buffer.
     jsr     RIA_SPIN
-    jsr     _argv_malloc
+    jsr     _argv_mem
 
     ; Bail if allocation failed.
     sta     ptr1
