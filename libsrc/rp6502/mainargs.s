@@ -1,5 +1,5 @@
 ;
-; 2023, Rumbledethumps
+; mainargs.s
 ;
 
 ; Lower priority than initheap so argv_malloc() can use malloc().
@@ -27,11 +27,18 @@
 
     ; Allocate buffer.
     jsr     RIA_SPIN
+    pha
+    phx
     jsr     _argv_mem
 
     ; Bail if allocation failed.
     sta     ptr1
     stx     ptr1+1
+    plx
+    pla
+    sta     ptr2
+    stx     ptr2+1
+    lda     ptr1
     ora     ptr1+1
     beq     zxstack
 
@@ -40,11 +47,6 @@
     ldx     ptr1+1
     sta     __argv
     stx     __argv+1
-
-    ; Re-obtain byte count from RIA
-    jsr     RIA_SPIN
-    sta     ptr2
-    stx     ptr2+1
 
     ; Pop ptr2 bytes from RIA_XSTACK into the allocated buffer.
     ldy     #0
