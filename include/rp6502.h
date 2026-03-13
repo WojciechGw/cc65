@@ -155,7 +155,8 @@ int __fastcall__ phi2 (void);
 int __fastcall__ code_page (int);
 long __fastcall__ lrand (void);
 int __fastcall__ stdin_opt (unsigned long ctrl_bits, unsigned char str_length);
-int __fastcall__ ria_exec (unsigned char *argv, int size); // TODO
+int __fastcall__ ria_execv (const char *path, char * const argv[]);
+int __cdecl__ ria_execl (const char *path, ...);
 int __fastcall__ ria_attr_get (); // TODO
 int __fastcall__ ria_attr_set (); // TODO
 int __fastcall__ read_xstack (void* buf, unsigned count, int fildes);
