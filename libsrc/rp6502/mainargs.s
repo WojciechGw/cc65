@@ -5,12 +5,14 @@
 .constructor initmainargs, 24
 .import __argc, __argv
 .import pushax
+.importzp ptr1
 
 ARGVBUF_SIZE = 512
 
 .segment "ONCE"
 
 .proc initmainargs
+
 
     ; Call ria_argv (buf, size)
     lda     #<argvbuf
@@ -22,13 +24,34 @@ ARGVBUF_SIZE = 512
     cpx     #$FF                ; fail
     beq     done
 
-    ; __argc = TODO
-    lda     0
-    ldx     0
-    sta     __argc
-    stx     __argc+1
+    ; Count argc by walking the null-terminated pointer table.
+    ; ria_argv has already relocated the pointers to absolute addresses.
+    lda     #<argvbuf
+    sta     ptr1
+    lda     #>argvbuf
+    sta     ptr1+1
 
-    ; __argv = argvbuf
+countloop:
+    ldy     #1
+    lda     (ptr1),y        ; high byte of pointer
+    dey
+    ora     (ptr1),y        ; OR with low byte
+    beq     setargv         ; null pointer = end of array
+
+    inc     __argc
+    bne     :+
+    inc     __argc+1
+:
+    lda     ptr1
+    clc
+    adc     #2
+    sta     ptr1
+    bcc     countloop
+    inc     ptr1+1
+    jmp     countloop
+
+setargv:
+    ; __argv = argvbuf (pointer table starts at top of buffer)
     lda     #<argvbuf
     ldx     #>argvbuf
     sta     __argv
