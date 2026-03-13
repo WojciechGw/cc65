@@ -2,12 +2,11 @@
 ; 2023, Rumbledethumps
 ;
 
-.constructor initmainargs, 24
-.import __argc, __argv
+; Lower priority than initheap so argv_malloc() can use malloc().
+.constructor initmainargs, 23
+.import __argc, __argv, _argv_malloc
 .importzp ptr1, ptr2
 .include "rp6502.inc"
-
-ARGVBUF_SIZE = 512
 
 .segment "ONCE"
 
@@ -18,31 +17,36 @@ ARGVBUF_SIZE = 512
     sta     RIA_OP
     jsr     RIA_SPIN
 
-    ; Bail if count > ARGVBUF_SIZE: clear xstack and return.
-    cpx     #>ARGVBUF_SIZE
-    bcc     fetch           ; X < 2 -> count fits
-    bne     zxstack         ; X > 2 -> too big
-    cmp     #<ARGVBUF_SIZE  ; X == 2: check low byte
-    beq     fetch           ; count == 512 -> fits (not strictly greater)
-                            ; count > 512 -> fall through
+    ; Bail if count <= 0.
+    sta     ptr2
+    txa
+    bmi     zxstack    ; count < 0
+    sta     ptr2+1
+    ora     ptr2
+    beq     zxstack    ; count == 0
 
-zxstack:
-    lda     #RIA_OP_ZXSTACK
-    sta     RIA_OP
-    bra     done
+    ; Allocate buffer.
+    jsr     RIA_SPIN
+    jsr     _argv_malloc
 
-fetch:
-    ; Save byte count in ptr2 (16-bit).
+    ; Bail if allocation failed.
+    sta     ptr1
+    stx     ptr1+1
+    ora     ptr1+1
+    beq     zxstack
+
+    ; Store buffer base in __argv.
+    lda     ptr1
+    ldx     ptr1+1
+    sta     __argv
+    stx     __argv+1
+
+    ; Re-obtain byte count from RIA
+    jsr     RIA_SPIN
     sta     ptr2
     stx     ptr2+1
 
-    ; Set write pointer to start of argvbuf.
-    lda     #<argvbuf
-    sta     ptr1
-    lda     #>argvbuf
-    sta     ptr1+1
-
-    ; Pop ptr2 bytes from RIA_XSTACK into argvbuf.
+    ; Pop ptr2 bytes from RIA_XSTACK into the allocated buffer.
     ldy     #0
 fillloop:
     lda     ptr2
@@ -62,11 +66,11 @@ fillloop:
 
     ; Walk the pointer table: relocate each offset to an absolute address
     ; and count argc. The RIA stores offsets relative to the buffer start;
-    ; adding argvbuf turns them into usable pointers.
+    ; adding __argv turns them into usable pointers.
 relocate:
-    lda     #<argvbuf
+    lda     __argv
     sta     ptr1
-    lda     #>argvbuf
+    lda     __argv+1
     sta     ptr1+1
 
 walkloop:
@@ -74,17 +78,17 @@ walkloop:
     lda     (ptr1),y        ; high byte of entry
     dey
     ora     (ptr1),y        ; OR with low byte
-    beq     setargv         ; null entry = end of table
+    beq     done            ; null entry = end of table
 
-    ; Add argvbuf base to the stored offset.
+    ; Add buffer base to the stored offset.
     ldy     #0
     lda     (ptr1),y
     clc
-    adc     #<argvbuf
+    adc     __argv
     sta     (ptr1),y
     iny
     lda     (ptr1),y
-    adc     #>argvbuf
+    adc     __argv+1
     sta     (ptr1),y
 
     inc     __argc
@@ -99,16 +103,11 @@ walkloop:
     inc     ptr1+1
     bra     walkloop
 
-setargv:
-    lda     #<argvbuf
-    ldx     #>argvbuf
-    sta     __argv
-    stx     __argv+1
+zxstack:
+    lda     #RIA_OP_ZXSTACK
+    sta     RIA_OP
 
 done:
     rts
 
 .endproc
-
-.bss
-argvbuf: .res ARGVBUF_SIZE
