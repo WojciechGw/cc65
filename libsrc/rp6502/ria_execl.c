@@ -14,7 +14,7 @@ int __cdecl__ ria_execl (const char* path, ...)
     int i, j;
     const char* s;
 
-    /* path becomes argv[0]; RIA derives the executable from argv[0]. */
+    /* path becomes argv[0] */
     ptrs[0] = path;
     lens[0] = (unsigned int)strlen (path) + 1U;
     argc = 1;
@@ -44,23 +44,20 @@ int __cdecl__ ria_execl (const char* path, ...)
     }
     va_end (ap);
 
-    /* Int table: (argc+1) * 2 bytes; strings start immediately after. */
+    /* Int table: (argc+1) * 2 bytes */
     if ((unsigned int)(argc + 1) * 2U + total_str > 512U) {
         errno = EINVAL;
         return -1;
     }
 
-    /*
-     * Build the xstack buffer (last byte pushed is first byte read by RIA).
-     * Push string_data first (ends up below int_table).
-     */
+    /* Push string data */
     for (i = argc - 1; i >= 0; --i) {
         for (j = (int)lens[i] - 1; j >= 0; --j) {
             ria_push_char (ptrs[i][j]);
         }
     }
 
-    /* Push the int table: terminator first, then offsets from last to first. */
+    /* Push the int table */
     ria_push_int (0);
     offset = (unsigned int)(argc + 1) * 2U + total_str;
     for (i = argc - 1; i >= 0; --i) {

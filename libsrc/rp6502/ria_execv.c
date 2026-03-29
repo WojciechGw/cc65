@@ -11,13 +11,13 @@ int __fastcall__ ria_execv (const char* path, char* const argv[])
     unsigned int offset;
     int i, j;
 
-    /* path is prepended as argv[0]; the caller's argv[] becomes argv[1]+. */
+    /* path becomes argv[0] */
     ptrs[0] = path;
     lens[0] = (unsigned int)strlen (path) + 1U;
     argc = 1;
     total_str = lens[0];
 
-    /* Collect the caller's argv[0], argv[1], ... as our argv[1]+. */
+    /* Collect argv[0], argv[1], ... */
     i = 0;
     while (argv[i] != NULL) {
         if (argc >= 16) {
@@ -35,37 +35,20 @@ int __fastcall__ ria_execv (const char* path, char* const argv[])
         i++;
     }
 
-    /* Int table: (argc+1) * 2 bytes; strings start immediately after. */
+    /* Int table: (argc+1) * 2 bytes */
     if ((unsigned int)(argc + 1) * 2U + total_str > 512U) {
         errno = EINVAL;
         return -1;
     }
 
-    /*
-     * Build the xstack buffer (last byte pushed is first byte read by RIA).
-     *
-     * RIA reads the buffer as: [int_table][string_data]
-     *   int_table : argc two-byte offsets (relative to buffer start),
-     *               followed by a zero terminator.
-     *   string_data: null-terminated strings concatenated in order.
-     *
-     * Push string_data first so it ends up below the int_table on the stack.
-     * Within the string block, push from the last string backward so that the
-     * first byte of argv[0] lands on top of the string block (first read).
-     */
+    /* Push string data */
     for (i = argc - 1; i >= 0; --i) {
         for (j = (int)lens[i] - 1; j >= 0; --j) {
             ria_push_char (ptrs[i][j]);
         }
     }
 
-    /*
-     * Push the int table: terminator first (lands at the bottom of the table),
-     * then offsets from the last to the first so that offset[0] ends up on top
-     * (first read by RIA).
-     *
-     * Offset[i] = int_table_size + sum(lens[0..i-1]).
-     */
+    /* Push the int table */
     ria_push_int (0);
     offset = (unsigned int)(argc + 1) * 2U + total_str;
     for (i = argc - 1; i >= 0; --i) {
