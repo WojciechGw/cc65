@@ -140,6 +140,7 @@ long __fastcall__ ria_call_long (unsigned char op);
 #define RIA_ATTR_BEL 0x05
 #define RIA_ATTR_LAUNCHER 0x06
 #define RIA_ATTR_EXIT_CODE 0x07
+#define RIA_ATTR_SIGINT 0x08
 
 /* C API for the operating system. */
 

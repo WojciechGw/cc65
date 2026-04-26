@@ -82,6 +82,7 @@ RIA_ATTR_LRAND            := $04
 RIA_ATTR_BEL              := $05
 RIA_ATTR_LAUNCHER         := $06
 RIA_ATTR_EXIT_CODE        := $07
+RIA_ATTR_SIGINT           := $08
 
 ; 6522 VIA
 VIA             := $FFD0        ; VIA base address
